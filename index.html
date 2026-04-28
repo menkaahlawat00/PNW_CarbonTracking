@@ -157,6 +157,14 @@
     .empty{font-size:13px;color:var(--text-tertiary);padding:.5rem 0;}
     .meth{font-size:11px;color:var(--text-tertiary);line-height:1.6;}
 
+    /* Live stats */
+    .live-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;margin-right:6px;animation:pulse 2s infinite;}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+    .live-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem;}
+    .live-metric{background:var(--bg-secondary);border:0.5px solid var(--border);border-radius:var(--radius-md);padding:.875rem 1rem;}
+    .live-metric .metric-value{font-size:20px;}
+    .section-divider{border:none;border-top:0.5px solid var(--border);margin:1.75rem 0;}
+
     /* Toast */
     .toast{position:fixed;bottom:24px;right:24px;font-size:13px;font-weight:500;padding:10px 18px;border-radius:var(--radius-md);opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;z-index:9999;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.15);}
     .toast.show{opacity:1;transform:translateY(0);}
@@ -181,6 +189,25 @@
     <p class="byline">PNW Climate Week · Vancouver · Seattle · Portland · Victoria</p>
   </header>
 
+  <!-- Live stats from Neon -->
+  <div class="card" id="live-card">
+    <div class="card-label">
+      <span><span class="live-dot"></span>This week — all events</span>
+      <span id="live-status" style="font-size:11px;color:var(--text-tertiary);">Loading…</span>
+    </div>
+    <div class="live-grid" id="live-metrics">
+      <div class="live-metric"><div class="metric-label">Events</div><div class="metric-value" id="lm-events">—</div><div class="metric-unit">logged this week</div></div>
+      <div class="live-metric"><div class="metric-label">Attendees</div><div class="metric-value" id="lm-att">—</div><div class="metric-unit">total this week</div></div>
+      <div class="live-metric"><div class="metric-label">Avg per person</div><div class="metric-value" id="lm-avg">—</div><div class="metric-unit">kg CO2e / person</div></div>
+      <div class="live-metric"><div class="metric-label">Total CO2e</div><div class="metric-value" id="lm-total">—</div><div class="metric-unit">kg this week</div></div>
+    </div>
+    <div id="live-bars"><div class="empty">No data yet.</div></div>
+  </div>
+
+  <hr class="section-divider">
+  <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:1.25rem;">Log your event below — it will be added to the totals above.</p>
+
+  <!-- Session metrics -->
   <div class="metrics">
     <div class="metric"><div class="metric-label">Total CO2e</div><div class="metric-value" id="m-total">0</div><div class="metric-unit">kg this session</div></div>
     <div class="metric"><div class="metric-label">Events logged</div><div class="metric-value" id="m-events">0</div><div class="metric-unit">this session</div></div>
@@ -363,6 +390,48 @@
 var API_BASE='https://pnw-carbon-backend.vercel.app';
 var events=[];
 
+async function loadLiveStats(){
+  try{
+    var res=await fetch(API_BASE+'/api/stats');
+    var d=await res.json();
+    var s=d.summary,b=d.avg_category_breakdown;
+
+    document.getElementById('lm-events').textContent=s.event_count;
+    document.getElementById('lm-att').textContent=s.total_attendees.toLocaleString();
+    document.getElementById('lm-avg').textContent=s.avg_per_attendee_co2e_kg.toFixed(2);
+    document.getElementById('lm-total').textContent=parseFloat(s.total_co2e_kg).toFixed(1);
+
+    var cats=[
+      {key:'travel',   label:'🚲 Travel',   val:b.travel,   color:'#1D9E75'},
+      {key:'energy',   label:'⚡ Energy',   val:b.energy,   color:'#7F77DD'},
+      {key:'catering', label:'🥗 Catering', val:b.catering, color:'#639922'},
+      {key:'waste',    label:'🗑️ Waste',    val:b.waste,    color:'#BA7517'},
+      {key:'materials',label:'📦 Materials',val:b.materials,color:'#D4537E'}
+    ];
+    var maxVal=Math.max.apply(null,cats.map(function(c){return c.val;}));
+    if(maxVal===0)maxVal=1;
+    var grand=cats.reduce(function(s,c){return s+c.val;},0);
+    var html='';
+    cats.forEach(function(c){
+      var pct=Math.round(c.val/maxVal*100);
+      var share=grand>0?Math.round(c.val/grand*100):0;
+      html+='<div class="bar-row">'+
+        '<span class="bar-cat">'+c.label+'</span>'+
+        '<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+c.color+';"></div></div>'+
+        '<span class="bar-val">'+parseFloat(c.val).toFixed(2)+' kg <span style="font-size:11px;font-weight:400;color:var(--text-tertiary);">('+share+'%)</span></span>'+
+      '</div>';
+    });
+    document.getElementById('live-bars').innerHTML=html||'<div class="empty">No data yet.</div>';
+
+    var now=new Date();
+    document.getElementById('live-status').textContent='Updated '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  }catch(e){
+    document.getElementById('live-status').textContent='Could not load';
+  }
+}
+
+document.addEventListener('DOMContentLoaded',loadLiveStats);
+
 function v(id){return parseFloat(document.getElementById(id).value)||0;}
 function sv(id){return document.getElementById(id).value;}
 function gv(id){var el=document.getElementById(id);return el?el.value.trim():'';}
@@ -500,7 +569,7 @@ async function saveEventToBackend(evt){
         what_worked_well:evt.qualGood,what_to_improve:evt.qualImprove
       })
     });
-    if(res.ok){showToast('Event saved ✓');}
+    if(res.ok){showToast('Event saved ✓');loadLiveStats();}
     else{console.warn('Save failed:',await res.text());showToast('Saved locally — server error','err');}
   }catch(e){
     console.warn('Backend unreachable:',e);
