@@ -316,6 +316,7 @@ function addEvent(){
   });
   renderList();renderMetrics();renderBars();
 }
+  saveEventToBackend(eventPayload); 
 
 function deleteEvent(i){events.splice(i,1);renderList();renderMetrics();renderBars();}
 
