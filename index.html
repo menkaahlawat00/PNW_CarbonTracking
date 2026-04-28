@@ -315,8 +315,62 @@ function addEvent(){
     co2:co2
   });
   renderList();renderMetrics();renderBars();
+  saveEventToBackend(events[events.length-1]);
 }
-  saveEventToBackend(eventPayload); 
+
+async function saveEventToBackend(event){
+  try{
+    var payload={
+      event_name:event.name,
+      event_date:event.date||null,
+      city:event.city||null,
+      organizer:event.host||null,
+      total_attendees:event.att,
+      venue_name:event.venue||null,
+      event_type:sv('ev-type')||null,
+      travel_walk_bike_pct:v('t-walk'),
+      travel_transit_pct:v('t-transit'),
+      travel_ev_carpool_pct:v('t-ev'),
+      travel_gas_car_pct:v('t-gas'),
+      travel_ridehail_pct:v('t-ride'),
+      travel_flight_pct:v('t-flight'),
+      local_distance_km:v('t-dist'),
+      flight_distance_km:v('t-fdist'),
+      duration_hours:v('en-hrs'),
+      venue_size_sqft:v('en-sqft'),
+      energy_source:sv('en-src'),
+      catering_provided:sv('cat-yn')==='yes',
+      food_type:sv('cat-type'),
+      portions:v('cat-meals'),
+      sourcing:sv('cat-src'),
+      packaging:sv('cat-pack'),
+      landfill_bags:v('w-land'),
+      recycling_bags:v('w-rec'),
+      compost_bags:v('w-comp'),
+      pages_printed:v('mat-pages'),
+      swag_type:sv('mat-swag'),
+      signage_category:sv('mat-sign'),
+      total_co2e_kg:event.co2.total,
+      per_attendee_co2e_kg:event.perAtt,
+      travel_co2_kg:event.co2.travel,
+      energy_co2_kg:event.co2.energy,
+      catering_co2_kg:event.co2.catering,
+      waste_co2_kg:event.co2.waste,
+      materials_co2_kg:event.co2.materials,
+      rating:event.rating?event.rating.label:null,
+      what_worked_well:event.qualGood,
+      what_to_improve:event.qualImprove
+    };
+    var res=await fetch(API_BASE+'/api/events',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    if(!res.ok)console.warn('Backend save failed:',await res.text());
+  }catch(err){
+    console.warn('Could not save to backend:',err);
+  }
+}
 
 function deleteEvent(i){events.splice(i,1);renderList();renderMetrics();renderBars();}
 
