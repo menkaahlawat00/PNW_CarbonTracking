@@ -186,7 +186,7 @@
   <header>
     <h1>PNW Climate Week — CO2 Emissions Calculator</h1>
     <p>Measure the sustainability impact of your event. Log travel, energy, catering, waste, and materials to get a per-attendee CO2 rating and an automatic sustainability grade.</p>
-    <p class="byline">PNW Climate Week · Vancouver · Seattle · Portland · Victoria</p>
+    <p class="byline">PNW Climate Week · Tacoma · Bend · Seattle · Portland · Vancouver BC · Bellingham</p>
   </header>
 
   <!-- Live stats from Neon -->
@@ -229,7 +229,7 @@
       <div class="f"><label class="fl">Event name *</label><input type="text" id="ev-name" placeholder="e.g. Opening Ceremony"></div>
       <div class="f"><label class="fl">Date</label><input type="date" id="ev-date"></div>
       <div class="f"><label class="fl">City</label>
-        <select id="ev-city"><option>Vancouver</option><option>Seattle</option><option>Portland</option><option>Victoria</option><option>Other</option></select>
+        <select id="ev-city" onchange="autoSetEnergy()"><option>Tacoma</option><option>Bend</option><option>Seattle</option><option>Portland</option><option>Vancouver BC</option><option>Bellingham</option></select>
       </div>
       <div class="f"><label class="fl">Host / organizer</label><input type="text" id="ev-host" placeholder="Name or org"></div>
     </div>
@@ -273,8 +273,8 @@
       <div class="f"><label class="fl">Venue size (sq ft)</label><input type="number" id="en-sqft" min="0" placeholder="2000"></div>
       <div class="f"><label class="fl">Energy source</label>
         <select id="en-src">
-          <option value="0.015">BC Hydro (hydro / renewable)</option>
-          <option value="0.04">Mix / unknown</option>
+          <option value="0.288152">WA/OR grid (NWPP eGrid — EPA 2024)</option>
+          <option value="0.018">BC grid (BC Hydro / hydroelectric — 2026)</option>
           <option value="0.2">Generator (diesel)</option>
         </select>
       </div>
@@ -380,10 +380,10 @@
     <div class="card-label">Emissions by category</div>
     <div id="bar-chart"><div class="empty">Add an event to see the breakdown.</div></div>
     <hr>
-    <div class="meth">Emission factors: walk/bike 0 kg/km; transit 0.089; EV/carpool 0.05; gas car 0.21; ride-hail 0.24; flight 0.255 kg/km. Energy: BC Hydro 0.015 kg/kWh, mix 0.04, diesel 0.2 kg/kWh. Venue load 2W/sq ft. Catering: plant-based 0.5 kg/meal, mostly-plant 1.2, mixed 2.5, meat-heavy 5.5. Waste: 0.5 kg CO2e/kg landfill; bag count uses 12 kg/bag. Pages: 0.005 kg/page. Rating per attendee: exemplary &lt;1 kg, good 1–3 kg, average 3–6 kg, below average 6–12 kg, needs work &gt;12 kg. Sources: GHG Protocol, DEFRA 2023, BC Hydro.</div>
+    <div class="meth">Emission factors: walk/bike 0 kg/km; transit 0.089; EV/carpool 0.05; gas car 0.21; ride-hail 0.24; flight 0.255 kg/km. Energy grid: WA/OR (NWPP eGrid) 0.288 kg CO2e/kWh (EPA eGRID 2024); BC 0.018 kg CO2e/kWh (Canada OBPS Table 5.3, 2026); diesel generator 0.2 kg CO2e/kWh. Venue load 2W/sq ft. Catering: plant-based 0.5 kg/meal, mostly-plant 1.2, mixed 2.5, meat-heavy 5.5. Waste: 0.5 kg CO2e/kg landfill; bag count uses 12 kg/bag. Pages: 0.005 kg/page. Rating per attendee: exemplary &lt;1 kg, good 1–3 kg, average 3–6 kg, below average 6–12 kg, needs work &gt;12 kg. Sources: GHG Protocol, DEFRA 2023, EPA eGRID, Environment and Climate Change Canada.</div>
   </div>
 
-  <footer>PNW Climate Week · CO2 calculator for community event organizers across the Pacific Northwest.</footer>
+  <footer>PNW Climate Week · CO2 calculator for community event organizers in Tacoma, Bend, Seattle, Portland, Vancouver BC, and Bellingham.</footer>
 
 </div>
 <script>
@@ -458,6 +458,12 @@ function toggleCat(){
   ['cat-type-wrap','cat-meals-wrap','cat-extra'].forEach(function(id){
     document.getElementById(id).classList.toggle('hidden',!on);
   });
+  updateRatingPreview();
+}
+
+function autoSetEnergy(){
+  var city=sv('ev-city');
+  document.getElementById('en-src').value=(city==='Vancouver BC')?'0.018':'0.288152';
   updateRatingPreview();
 }
 
